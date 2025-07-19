@@ -1,4 +1,8 @@
+<img width="1920" height="947" alt="Screenshot 2025-07-19 at 23-05-18 Sudoku Pro - Platinum Edition" src="https://github.com/user-attachments/assets/b3ddee1b-2c2b-4f0b-9375-a2d28157d232" />
+
+
 🧠 Sudoku Pro – Platinum Edition 💎
+
 
 The Ultimate Number Challenge!
 
