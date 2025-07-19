@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku Pro - Platinum Edition</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            overflow-x: hidden;
+            padding: 10px;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+            padding: 20px;
+            max-width: 850px;
+            width: 100%;
+            max-height: 95vh;
+            overflow-y: auto;
+            animation: slideIn 0.8s ease-out;
+            position: relative;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            background: linear-gradient(45deg, #5e72e4, #825ee4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .header .subtitle {
+            color: #555;
+            font-size: 1em;
+        }
+
+        .game-options-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: rgba(230, 230, 250, 0.5);
+            border-radius: 10px;
+        }
+
+        .game-options-bar .option-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .game-options-bar label {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #444;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+
+        .game-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 12px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 15px;
+            color: white;
+            box-shadow: 0 8px 25px rgba(240, 147, 251, 0.3);
+        }
+
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 1.3em; font-weight: bold; display: block; }
+        .stat-label { font-size: 0.75em; opacity: 0.9; }
+
+        .progress-bar {
+            width: 100%; height: 8px; background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px; margin: 10px 0; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 4px; transition: width 0.3s ease; animation: progressGlow 2s infinite alternate;
+        }
+        @keyframes progressGlow {
+            from { box-shadow: 0 0 5px rgba(79, 172, 254, 0.5); }
+            to { box-shadow: 0 0 15px rgba(79, 172, 254, 0.8); }
+        }
+
+        .difficulty-selector { margin-bottom: 15px; text-align: center; }
+        .difficulty-selector h3 { margin-bottom: 10px; font-size: 1.1em; }
+        .difficulty-buttons {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 8px; max-width: 450px; margin: 0 auto;
+        }
+        .difficulty-btn {
+            padding: 8px 10px; border: 2px solid transparent; border-radius: 20px; cursor: pointer;
+            transition: all 0.3s ease; background: rgba(255, 255, 255, 0.8); color: #333;
+            font-size: 0.8em; text-align: center;
+        }
+        .difficulty-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; transform: scale(1.05);
+        }
+
+        .game-controls {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Adjusted minmax for more buttons */
+            gap: 8px; margin-bottom: 15px; justify-items: center;
+        }
+        .btn {
+            padding: 9px 12px; border: none; border-radius: 10px; cursor: pointer;
+            font-size: 0.75em; font-weight: 600; transition: all 0.3s ease;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            text-transform: uppercase; letter-spacing: 0.5px; width: 100%; min-width: 90px;
+        }
+        .btn i { margin-right: 5px; }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;
+            box-shadow: 0 6px 20px rgba(240, 147, 251, 0.3);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.3);
+        }
+         .btn-warning { /* For Pause button */
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); color: white;
+            box-shadow: 0 6px 20px rgba(255, 193, 7, 0.4);
+        }
+        .btn-pencil {
+            background: linear-gradient(135deg, #feca57 0%, #ff9f43 100%); color: white;
+            box-shadow: 0 6px 20px rgba(254, 202, 87,0.4);
+        }
+        .btn-pencil.active {
+            background: linear-gradient(135deg, #ff9f43 0%, #feca57 100%);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 6px 20px rgba(254, 202, 87,0.4);
+            transform: translateY(1px);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        .btn:disabled { /* Style for disabled buttons when paused */
+            background: #bbb;
+            color: #777;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: translateY(0);
+        }
+
+
+        .sudoku-board {
+            display: grid; grid-template-columns: repeat(9, 1fr); gap: 1px;
+            background: #444; border-radius: 12px; padding: 6px;
+            margin: 15px auto; max-width: 420px; width: 100%;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2); aspect-ratio: 1;
+            position: relative; /* For pause overlay */
+        }
+        .board-pause-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3em;
+            z-index: 5; /* Above cells but below modals */
+            border-radius: 12px; /* Match board radius */
+            pointer-events: none; /* Allow clicks to underlying elements if needed, but we disable buttons */
+        }
+
+        .sudoku-cell {
+            background: white; border: none; font-weight: bold; text-align: center;
+            cursor: pointer; transition: all 0.2s ease; position: relative; border-radius: 3px;
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; height: 100%; padding: 0;
+            font-size: 1.3em;
+            overflow: hidden;
+        }
+        .sudoku-cell input.cell-input-main {
+            width: 100%; height: 100%; border: none; background: transparent;
+            text-align: center; font-size: inherit; font-weight: inherit; color: inherit;
+            padding: 0; outline: none;
+        }
+        .sudoku-cell.border-top { border-top: 3px solid #333 !important; }
+        .sudoku-cell.border-left { border-left: 3px solid #333 !important; }
+
+        .pencil-marks-grid {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+            pointer-events: none;
+        }
+        .pencil-mark {
+            font-size: 0.4em;
+            color: #666;
+            display: flex; align-items: center; justify-content: center;
+            line-height: 1;
+        }
+
+        .sudoku-cell:hover { background: #e9ecef; transform: scale(1.03); }
+        .sudoku-cell.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; box-shadow: 0 0 15px rgba(102, 126, 234, 0.5);
+        }
+        .sudoku-cell.selected input.cell-input-main { color: white; }
+
+        .sudoku-cell.given { background: #f8f9fa; color: #343a40; font-weight: 900; }
+        .sudoku-cell.given input.cell-input-main { color: #343a40; }
+
+        .sudoku-cell.error {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white; animation: shake 0.4s ease-in-out;
+        }
+        .sudoku-cell.error input.cell-input-main { color: white; }
+
+        .sudoku-cell.highlight-hint {
+            background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%) !important;
+            color: white !important;
+            box-shadow: 0 0 20px rgba(23, 162, 184, 0.6);
+        }
+        .sudoku-cell.highlight-hint input.cell-input-main { color: white !important; }
+        .sudoku-cell.highlight { /* General highlight for related cells */
+             background: rgba(102, 126, 234, 0.15) !important;
+        }
+        .sudoku-cell.highlight-identical { /* Highlight for identical numbers */
+            background: rgba(255, 215, 0, 0.4) !important; /* Gold-ish highlight */
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); } 75% { transform: translateX(4px); }
+        }
+
+        .number-pad {
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+            margin: 15px auto 0; max-width: 320px;
+        }
+        .number-btn {
+            aspect-ratio: 1; border: none; border-radius: 8px;
+            font-size: 1em; font-weight: bold; cursor: pointer;
+            transition: all 0.2s ease;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;
+            box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .number-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(79, 172, 254, 0.4);
+        }
+        .number-btn:disabled {
+            background: #bbb;
+            color: #777;
+            cursor: not-allowed;
+        }
+
+
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+        }
+        .modal-content {
+            background: white; margin: 10% auto; padding: 25px;
+            border-radius: 15px; width: 90%; max-width: 480px;
+            text-align: center; animation: modalSlideIn 0.3s ease-out;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: translateY(-40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-content h2, .modal-content h3 { margin-bottom: 15px; font-size: 1.6em;}
+        .modal-content p { margin-bottom: 20px; font-size: 1em; color: #555; line-height: 1.6;}
+
+        #tutorialModal .modal-content {
+            max-width: 550px;
+        }
+        .tutorial-step-modal {
+            display: none;
+            background: linear-gradient(135deg, #6a82fb 0%, #8463f6 100%); /* Slightly adjusted for better contrast if needed */
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: left;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.4); /* Enhanced text shadow for readability */
+        }
+        .tutorial-step-modal.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+        .tutorial-step-modal h3 {
+            color: #fff; /* Ensure h3 is also white */
+            margin-bottom: 10px;
+        }
+        .tutorial-step-modal p {
+            color: #f0f0f0; /* Slightly off-white for paragraph text for softer look */
+            line-height: 1.7;
+        }
+        .tutorial-step-modal strong {
+            color: #fff;
+            font-weight: 700;
+        }
+        .tutorial-step-modal i { /* Ensure icons in tutorial are visible */
+            color: #ffd700; /* Gold color for icons */
+            margin-right: 3px;
+        }
+
+
+        .tutorial-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .tutorial-navigation .btn {
+            min-width: 100px;
+        }
+        .close-modal-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.8em;
+            color: #aaa;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        .close-modal-btn:hover {
+            color: #333;
+        }
+
+
+        .notification {
+            position: fixed; top: 20px; right: 20px; padding: 12px 20px;
+            border-radius: 8px; color: white; font-weight: 600; z-index: 1001;
+            animation: notificationSlideIn 0.3s ease-out, notificationSlideOut 0.3s ease-out 2.7s forwards;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            display: flex; align-items: center; gap: 8px; font-size: 0.9em;
+        }
+        @keyframes notificationSlideIn {
+            from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes notificationSlideOut {
+            from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; }
+        }
+        .notification.success { background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%); }
+        .notification.error { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); }
+        .notification.info { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+
+        .sound-toggle {
+            position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.9);
+            border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer;
+            font-size: 1em; transition: all 0.3s ease; z-index: 10;
+        }
+        .sound-toggle:hover { background: white; transform: scale(1.1); }
+
+        @media (max-width: 768px) {
+            .game-container { padding: 15px; max-width: 100%; }
+            .header h1 { font-size: 1.8em; }
+            .sudoku-board { max-width: 380px; padding: 5px;}
+            .sudoku-cell { font-size: 1.1em; }
+            .pencil-mark { font-size: 0.35em; }
+            .number-pad { max-width: 280px; }
+            .game-stats { grid-template-columns: repeat(2, 1fr); padding: 10px; }
+            .stat-value { font-size: 1.1em; }
+            .btn { font-size: 0.7em; padding: 8px 10px; min-width: 80px; }
+            .difficulty-btn { font-size: 0.75em; }
+            .game-options-bar { flex-direction: column; gap: 10px; align-items: flex-start;}
+            #tutorialModal .modal-content { max-width: 90%; padding: 20px;}
+            .tutorial-navigation .btn { font-size: 0.7em; padding: 8px 10px;}
+        }
+
+        @media (max-width: 480px) {
+            .game-container { padding: 10px; border-radius: 15px;}
+            .header h1 { font-size: 1.6em; }
+            .sudoku-board { max-width: 100%; gap: 1px; padding: 4px; }
+            .sudoku-cell { font-size: 1em; }
+            .pencil-mark { font-size: 0.3em; }
+            .number-pad { max-width: 100%; grid-template-columns: repeat(5, 1fr); }
+            .game-controls { grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); /* Adjusted for more buttons */ gap: 6px; }
+            .difficulty-buttons { grid-template-columns: repeat(2, 1fr); }
+            .btn { font-size: 0.65em; padding: 7px 8px; }
+            .game-options-bar .option-group { width: 100%; justify-content: space-between;}
+            .game-options-bar label { font-size: 0.8em;}
+            #tutorialModal .modal-content { padding: 15px;}
+            .tutorial-step-modal { padding: 15px;}
+            .tutorial-navigation { flex-direction: column; gap: 8px;}
+            .tutorial-navigation .btn { width: 100%;}
+        }
+
+        .celebration {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 999;
+        }
+        .confetti {
+            position: absolute; width: 10px; height: 10px;
+            animation: confettiFall 3s linear infinite;
+        }
+        @keyframes confettiFall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <button class="sound-toggle" onclick="toggleSound()" title="Toggle Sound">
+        <i class="fas fa-volume-up" id="soundIcon"></i>
+    </button>
+
+    <div class="game-container">
+        <div class="header">
+            <h1><i class="fas fa-gem"></i> Sudoku Platinum</h1>
+            <p class="subtitle">The Ultimate Number Challenge 💎</p>
+        </div>
+
+        <div class="game-options-bar">
+            <div class="option-group">
+                <label for="pencilModeToggleBtn">Pencil Mode:</label>
+                <button class="btn btn-pencil" id="pencilModeToggleBtn" onclick="togglePencilMode()">
+                    <i class="fas fa-pencil-alt"></i> Off
+                </button>
+            </div>
+            <div class="option-group">
+                <label for="strictModeToggle">Strict Mode (3 Mistakes):</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="strictModeToggle" onchange="toggleStrictMode(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="game-stats">
+            <div class="stat-item">
+                <span class="stat-value" id="timeDisplay">00:00</span>
+                <span class="stat-label">⏱️ Time</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="mistakesDisplay">0</span>
+                <span class="stat-label" id="mistakesLabel">❌ Mistakes</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="hintsDisplay">3</span>
+                <span class="stat-label">💡 Hints</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="scoreDisplay">0</span>
+                <span class="stat-label">🏆 Score</span>
+            </div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+
+        <div class="difficulty-selector">
+            <h3>🎯 Difficulty Level</h3>
+            <div class="difficulty-buttons">
+                <button class="difficulty-btn active" data-difficulty="easy" onclick="setDifficulty('easy')">😊 Easy</button>
+                <button class="difficulty-btn" data-difficulty="medium" onclick="setDifficulty('medium')">🤔 Medium</button>
+                <button class="difficulty-btn" data-difficulty="hard" onclick="setDifficulty('hard')">😤 Hard</button>
+                <button class="difficulty-btn" data-difficulty="expert" onclick="setDifficulty('expert')">🔥 Expert</button>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-primary" id="newGameBtn" onclick="newGame()"><i class="fas fa-play"></i> New Game</button>
+            <button class="btn btn-secondary" id="hintBtn" onclick="requestHint()"><i class="fas fa-lightbulb"></i> Hint</button>
+            <button class="btn btn-success" id="checkBtn" onclick="validateBoard()"><i class="fas fa-check"></i> Check</button>
+            <button class="btn btn-warning" id="pauseBtn" onclick="togglePauseGame()"><i class="fas fa-pause"></i> Pause</button>
+            <button class="btn btn-primary" id="tutorialBtn" onclick="showTutorial()"><i class="fas fa-graduation-cap"></i> Tutorial</button>
+            <button class="btn btn-secondary" id="resetBtn" onclick="resetGame()"><i class="fas fa-redo"></i> Reset</button>
+        </div>
+
+        <div class="sudoku-board" id="sudokuBoard">
+            </div>
+
+        <div class="number-pad" id="numberPad">
+            <button class="number-btn" onclick="selectNumber(1)">1</button>
+            <button class="number-btn" onclick="selectNumber(2)">2</button>
+            <button class="number-btn" onclick="selectNumber(3)">3</button>
+            <button class="number-btn" onclick="selectNumber(4)">4</button>
+            <button class="number-btn" onclick="selectNumber(5)">5</button>
+            <button class="number-btn" onclick="selectNumber(6)">6</button>
+            <button class="number-btn" onclick="selectNumber(7)">7</button>
+            <button class="number-btn" onclick="selectNumber(8)">8</button>
+            <button class="number-btn" onclick="selectNumber(9)">9</button>
+            <button class="number-btn" id="eraserBtn" onclick="clearCell()" style="grid-column: span 1;"><i class="fas fa-eraser"></i></button>
+        </div>
+    </div>
+
+    <div id="gameCompleteModal" class="modal">
+        <div class="modal-content">
+            <h2 id="gameCompleteTitle">🎉 Congratulations!</h2>
+            <p id="gameCompleteMessage">You've completed the puzzle!</p>
+            <div id="finalStats"></div>
+            <button class="btn btn-primary" onclick="closeModal('gameCompleteModal'); newGame();">Play Again</button>
+        </div>
+    </div>
+
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h3 id="confirmTitle">Confirm Action</h3>
+            <p id="confirmMessage">Are you sure?</p>
+            <div style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="confirmAction()">Yes</button>
+                <button class="btn btn-secondary" onclick="closeModal('confirmModal')" style="margin-left: 10px;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="tutorialModal" class="modal">
+        <div class="modal-content">
+            <button class="close-modal-btn" onclick="closeTutorial()">&times;</button>
+            <h2 id="tutorialModalTitle">Sudoku Platinum Tutorial</h2>
+            <div id="tutorialStepsContainer">
+                <div class="tutorial-step-modal" id="tutStep1">
+                    <h3>🎯 Welcome to Sudoku Platinum!</h3>
+                    <p>The goal is to fill the 9×9 grid so that each column, each row, and each of the nine 3×3 subgrids contain all of the digits from 1 to 9. No repeats!</p>
+                    <p>This version includes Pencil Mode for jotting down notes, a challenging Strict Mode, number highlighting, and game pause!</p>
+                </div>
+                <div class="tutorial-step-modal" id="tutStep2">
+                    <h3>🎮 How to Play</h3>
+                    <p>1. Click on an empty cell to select it.</p>
+                    <p>2. Click a number on the number pad to enter it. If the selected cell has a number, identical numbers on the board will highlight!</p>
+                    <p>3. <strong>Pencil Mode <i class="fas fa-pencil-alt"></i>:</strong> Toggle this ON to enter small candidate numbers (notes) in a cell. Click a number again to remove the note. Turn OFF to enter final numbers.</p>
+                    <p>4. <strong>Strict Mode <label class="toggle-switch" style="vertical-align: middle; transform: scale(0.7);"><input type="checkbox" disabled><span class="slider"></span></label>:</strong> If enabled, making more than 3 mistakes will end the game.</p>
+                </div>
+                <div class="tutorial-step-modal" id="tutStep3">
+                    <h3>💡 Platinum Tips & Features</h3>
+                    <p>• <strong>Hints <i class="fas fa-lightbulb"></i>:</strong> Stuck? The hint button can reveal a "Naked Single" or a simple correct number.</p>
+                    <p>• <strong>Check <i class="fas fa-check"></i>:</strong> Validates your current entries and highlights any errors.</p>
+                    <p>• <strong>Pause <i class="fas fa-pause"></i>:</strong> Need a break? Pause the game and timer.</p>
+                    <p>• <strong>Eraser <i class="fas fa-eraser"></i>:</strong> Clears the selected cell's main number or all its pencil marks (if in Pencil Mode).</p>
+                    <p>Good luck, and enjoy mastering the numbers!</p>
+                </div>
+            </div>
+            <div class="tutorial-navigation">
+                <button class="btn btn-secondary" id="tutorialPrevBtn" onclick="previousTutorialStep()" style="display: none;"><i class="fas fa-arrow-left"></i> Previous</button>
+                <button class="btn btn-primary" id="tutorialNextBtn" onclick="nextTutorialStep()">Next <i class="fas fa-arrow-right"></i></button>
+                <button class="btn btn-success" id="tutorialCloseBtn" onclick="closeTutorial()" style="display: none;">Got It! <i class="fas fa-check-circle"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="celebration" id="celebration"></div>
+
+    <script>
+        // --- Game State ---
+        let gameState = {
+            board: Array(9).fill().map(() => Array(9).fill(0)),
+            solution: Array(9).fill().map(() => Array(9).fill(0)),
+            originalBoard: Array(9).fill().map(() => Array(9).fill(0)),
+            pencilMarks: Array(9).fill().map(() => Array(9).fill(null).map(() => new Set())),
+            selectedCell: null,
+            difficulty: 'easy',
+            startTime: null,
+            gameTime: 0,
+            mistakes: 0,
+            hintsUsed: 0,
+            hintsDisplay: 3,
+            score: 0,
+            isGameActive: false,
+            soundEnabled: true,
+            currentTutorialStep: 1,
+            totalTutorialSteps: 3,
+            isPencilMode: false,
+            isStrictMode: false,
+            strictModeMistakeLimit: 3,
+            mistakesRemaining: 3,
+            isPaused: false, // New state for pause
+            pauseStartTime: 0 // To calculate paused duration
+        };
+
+        // --- Difficulty Settings ---
+        const difficultySettings = {
+            easy: { cellsToRemove: 35, timeBonus: 100, name: 'Easy' },
+            medium: { cellsToRemove: 45, timeBonus: 200, name: 'Medium' },
+            hard: { cellsToRemove: 53, timeBonus: 300, name: 'Hard' },
+            expert: { cellsToRemove: 58, timeBonus: 500, name: 'Expert' }
+        };
+
+        // --- Audio ---
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(frequency, duration, type = 'sine', volume = 0.2) {
+            if (!gameState.soundEnabled || !audioContext || audioContext.state === 'suspended') return;
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
+            gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + duration);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+        const sounds = {
+            click: () => playSound(800, 0.05, 'triangle', 0.15),
+            pencilClick: () => playSound(1200, 0.03, 'square', 0.1),
+            success: () => { playSound(523.25, 0.1); setTimeout(() => playSound(659.25, 0.1), 100); setTimeout(() => playSound(783.99, 0.15), 200); },
+            error: () => playSound(164.81, 0.2, 'sawtooth', 0.25),
+            hint: () => playSound(600, 0.15, 'sine', 0.2),
+            complete: () => { for (let i = 0; i < 5; i++) setTimeout(() => playSound(523.25 + i * 130, 0.15), i * 100); },
+            gameOver: () => playSound(130.81, 0.5, 'sawtooth', 0.3),
+            pause: () => playSound(440, 0.1, 'square', 0.1),
+            resume: () => playSound(550, 0.1, 'square', 0.1)
+        };
+        
+        // --- In-memory State Saving ---
+        let savedGameStateInMemory = null;
+        let saveTimeout;
+        function saveGameState() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                const gameStateString = JSON.stringify(gameState, (key, value) => {
+                    if (value instanceof Set) return { type: 'Set', data: Array.from(value) };
+                    return value;
+                });
+                savedGameStateInMemory = JSON.parse(gameStateString);
+            }, 500);
+        }
+
+        function loadGameState() {
+            if (savedGameStateInMemory) {
+                const loadedState = JSON.parse(JSON.stringify(savedGameStateInMemory), (key, value) => {
+                    if (typeof value === 'object' && value !== null && value.type === 'Set') return new Set(value.data);
+                    return value;
+                });
+                gameState.difficulty = loadedState.difficulty || 'easy';
+                gameState.soundEnabled = typeof loadedState.soundEnabled === 'boolean' ? loadedState.soundEnabled : true;
+                gameState.isPencilMode = loadedState.isPencilMode || false;
+                gameState.isStrictMode = loadedState.isStrictMode || false;
+            }
+        }
+        
+        // --- DOM Elements (cache frequently used ones) ---
+        let domElements = {};
+        function cacheDOMElements() {
+            domElements.sudokuBoard = document.getElementById('sudokuBoard');
+            domElements.pauseBtn = document.getElementById('pauseBtn');
+            domElements.numberPad = document.getElementById('numberPad');
+            domElements.controlButtons = document.querySelectorAll('.game-controls .btn:not(#pauseBtn):not(#tutorialBtn)'); // Buttons to disable on pause
+            domElements.optionToggles = document.querySelectorAll('.game-options-bar input, .game-options-bar button');
+        }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', function() {
+            cacheDOMElements();
+            function initAudioContext() {
+                if (audioContext.state === 'suspended') audioContext.resume().catch(err => console.error("AudioContext resume failed:", err));
+                document.body.removeEventListener('click', initAudioContext);
+                document.body.removeEventListener('touchstart', initAudioContext);
+            }
+            document.body.addEventListener('click', initAudioContext);
+            document.body.addEventListener('touchstart', initAudioContext);
+            
+            initGame();
+            showNotification('👋 Welcome to Sudoku Platinum! Select a cell to begin.', 'info');
+        });
+
+        function initGame() {
+            createBoardElements();
+            loadGameState(); 
+            updatePencilModeButton();
+            updateStrictModeToggleUI();
+            newGame(); 
+            startTimer();
+            updateDifficultyButtonsUI(gameState.difficulty);
+            updateSoundToggleUI(gameState.soundEnabled);
+            updatePauseButtonUI(); // Ensure pause button is in correct state
+        }
+
+        // --- Board Creation & Display ---
+        function createBoardElements() {
+            domElements.sudokuBoard.innerHTML = ''; // Clear previous board
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'sudoku-cell';
+                    cellDiv.id = `cell-container-${row}-${col}`;
+                    cellDiv.addEventListener('click', () => selectCell(row, col));
+
+                    const inputElement = document.createElement('input');
+                    inputElement.type = 'text';
+                    inputElement.className = 'cell-input-main';
+                    inputElement.id = `cell-${row}-${col}`;
+                    inputElement.maxLength = 1;
+                    inputElement.pattern = "[1-9]";
+                    inputElement.readOnly = true;
+                    
+                    const pencilGrid = document.createElement('div');
+                    pencilGrid.className = 'pencil-marks-grid';
+                    pencilGrid.id = `pencil-${row}-${col}`;
+                    for (let i = 1; i <= 9; i++) {
+                        const markSpan = document.createElement('span');
+                        markSpan.className = 'pencil-mark';
+                        markSpan.id = `mark-${row}-${col}-${i}`;
+                        pencilGrid.appendChild(markSpan);
+                    }
+                    
+                    cellDiv.appendChild(inputElement);
+                    cellDiv.appendChild(pencilGrid);
+                    
+                    if (row % 3 === 0 && row !== 0) cellDiv.classList.add('border-top');
+                    if (col % 3 === 0 && col !== 0) cellDiv.classList.add('border-left');
+                    
+                    domElements.sudokuBoard.appendChild(cellDiv);
+                }
+            }
+        }
+        
+        function updateBoardDisplay() {
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    const cellContainer = document.getElementById(`cell-container-${r}-${c}`);
+                    const cellInput = document.getElementById(`cell-${r}-${c}`);
+                    if (!cellContainer || !cellInput) continue;
+
+                    const value = gameState.board[r][c];
+                    cellInput.value = value === 0 ? '' : value;
+                    
+                    cellContainer.className = 'sudoku-cell'; // Reset
+                    if (r % 3 === 0 && r !== 0) cellContainer.classList.add('border-top');
+                    if (c % 3 === 0 && c !== 0) cellContainer.classList.add('border-left');
+
+                    if (gameState.originalBoard[r][c] !== 0) cellContainer.classList.add('given');
+                    
+                    if (gameState.selectedCell && gameState.selectedCell.row === r && gameState.selectedCell.col === c) {
+                        cellContainer.classList.add('selected');
+                    }
+                    // Apply identical number highlight if this cell matches the selected cell's number
+                    if (gameState.selectedCell && value !== 0 && value === gameState.board[gameState.selectedCell.row][gameState.selectedCell.col] && !(gameState.selectedCell.row === r && gameState.selectedCell.col === c) ) {
+                         cellContainer.classList.add('highlight-identical');
+                    }
+
+
+                    const pencilSet = gameState.pencilMarks[r][c];
+                    for (let i = 1; i <= 9; i++) {
+                        const markSpan = document.getElementById(`mark-${r}-${c}-${i}`);
+                        if (markSpan) markSpan.textContent = (value === 0 && pencilSet.has(i)) ? i : '';
+                    }
+                    const pencilGridElement = document.getElementById(`pencil-${r}-${c}`);
+                    if(pencilGridElement) pencilGridElement.style.display = (value === 0) ? 'grid' : 'none';
+                }
+            }
+            updateProgress();
+        }
+
+        // --- Game Logic: New Game, Reset ---
+        function newGame() {
+            gameState.startTime = Date.now();
+            gameState.gameTime = 0;
+            gameState.mistakes = 0;
+            gameState.hintsUsed = 0;
+            gameState.score = 0;
+            gameState.isGameActive = true;
+            gameState.hintsDisplay = 3;
+            gameState.mistakesRemaining = gameState.strictModeMistakeLimit;
+            gameState.isPaused = false; // Ensure game starts unpaused
+            gameState.pencilMarks = Array(9).fill().map(() => Array(9).fill(null).map(() => new Set()));
+
+            generatePuzzle();
+            updateBoardDisplay();
+            updateStatsDisplay();
+            updatePauseButtonUI(); // Reflect unpaused state
+            toggleGameInteractions(true); // Enable interactions
+            removePauseOverlay();
+            saveGameState();
+            
+            showNotification(`🎮 New ${difficultySettings[gameState.difficulty].name} game started!`, 'success');
+            sounds.click();
+        }
+
+        function resetGame() {
+            if (gameState.isPaused) return;
+            showConfirmModal('Reset Puzzle', 'Reset the current puzzle to its start?', () => {
+                gameState.board = JSON.parse(JSON.stringify(gameState.originalBoard));
+                gameState.pencilMarks = Array(9).fill().map(() => Array(9).fill(null).map(() => new Set()));
+                gameState.mistakes = 0;
+                gameState.startTime = Date.now(); // Reset timer for this attempt
+                gameState.gameTime = 0;
+                gameState.score = 0;
+                gameState.isGameActive = true; // Ensure game is active
+                gameState.isPaused = false; // Ensure not paused
+                gameState.mistakesRemaining = gameState.strictModeMistakeLimit;
+
+                updateBoardDisplay();
+                updateStatsDisplay();
+                updatePauseButtonUI();
+                toggleGameInteractions(true);
+                removePauseOverlay();
+                saveGameState();
+                showNotification('🔄 Puzzle reset!', 'info');
+                sounds.click();
+            });
+        }
+        
+        function generatePuzzle() { // Placeholder - use robust generation
+            gameState.solution = generateCompleteSudoku();
+            gameState.board = JSON.parse(JSON.stringify(gameState.solution));
+            const cellsToRemove = difficultySettings[gameState.difficulty].cellsToRemove;
+            let removed = 0;
+            const cells = [];
+            for(let r=0; r<9; r++) for(let c=0; c<9; c++) cells.push([r,c]);
+            cells.sort(() => Math.random() - 0.5);
+
+            for(let i=0; i < cells.length && removed < cellsToRemove; i++){
+                const [r,c] = cells[i];
+                if (gameState.board[r][c] !== 0) {
+                    gameState.board[r][c] = 0;
+                    removed++;
+                }
+            }
+            gameState.originalBoard = JSON.parse(JSON.stringify(gameState.board));
+        }
+
+        function generateCompleteSudoku() { // Basic backtracking
+            const board = Array(9).fill().map(() => Array(9).fill(0));
+            function isValid(r, c, num) {
+                for (let i = 0; i < 9; i++) if (board[r][i] === num || board[i][c] === num) return false;
+                const boxR = Math.floor(r/3)*3, boxC = Math.floor(c/3)*3;
+                for (let i=0; i<3; i++) for (let j=0; j<3; j++) if (board[boxR+i][boxC+j] === num) return false;
+                return true;
+            }
+            function solve() {
+                for (let r=0; r<9; r++) for (let c=0; c<9; c++) if (board[r][c] === 0) {
+                    const nums = [1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-0.5);
+                    for (const num of nums) if (isValid(r,c,num)) {
+                        board[r][c]=num; if (solve()) return true; board[r][c]=0;
+                    } return false;
+                } return true;
+            } solve(); return board;
+        }
+
+        // --- Cell Interaction & Input ---
+        function selectCell(row, col) {
+            if (!gameState.isGameActive || gameState.isPaused) return;
+            
+            // Clear previous identical number highlights
+            document.querySelectorAll('.sudoku-cell.highlight-identical').forEach(c => c.classList.remove('highlight-identical'));
+
+            gameState.selectedCell = { row, col };
+            updateBoardDisplay(); // Handles 'selected' class and general highlights
+            
+            // Highlight identical numbers based on the new selection
+            const selectedValue = gameState.board[row][col];
+            if (selectedValue !== 0) {
+                for (let r = 0; r < 9; r++) {
+                    for (let c_ = 0; c_ < 9; c_++) {
+                        if (gameState.board[r][c_] === selectedValue) {
+                            document.getElementById(`cell-container-${r}-${c_}`)?.classList.add('highlight-identical');
+                        }
+                    }
+                }
+            }
+            // General row/col/box highlight
+            highlightRelatedCells(row, col); 
+            sounds.click();
+        }
+
+        function highlightRelatedCells(row, col) { // Only for row/col/box, not identical numbers
+            document.querySelectorAll('.sudoku-cell.highlight').forEach(c => c.classList.remove('highlight'));
+            for (let i = 0; i < 9; i++) {
+                document.getElementById(`cell-container-${row}-${i}`)?.classList.add('highlight');
+                document.getElementById(`cell-container-${i}-${col}`)?.classList.add('highlight');
+            }
+            const boxR = Math.floor(row / 3) * 3, boxC = Math.floor(col / 3) * 3;
+            for (let r_ = 0; r_ < 3; r_++) for (let c_ = 0; c_ < 3; c_++) {
+                document.getElementById(`cell-container-${boxR+r_}-${boxC+c_}`)?.classList.add('highlight');
+            }
+            // Re-apply selected class as highlight might overwrite it
+             const selectedElem = document.getElementById(`cell-container-${row}-${col}`);
+             if(selectedElem) selectedElem.classList.add('selected');
+        }
+
+
+        function selectNumber(num) {
+            if (!gameState.selectedCell || !gameState.isGameActive || gameState.isPaused) return;
+            const { row, col } = gameState.selectedCell;
+            const cellContainer = document.getElementById(`cell-container-${row}-${col}`);
+            if (cellContainer && cellContainer.classList.contains('given')) {
+                showNotification('⚠️ Cannot modify given numbers!', 'error'); return;
+            }
+            if (gameState.isPencilMode) {
+                addRemovePencilMark(row, col, num); sounds.pencilClick();
+            } else {
+                handleDirectInput(row, col, num);
+            }
+        }
+        
+        function handleDirectInput(row, col, num) {
+            if (gameState.originalBoard[row][col] !== 0) return;
+            const currentBoardValue = gameState.board[row][col];
+            gameState.board[row][col] = 0;
+
+            if (isValidPlacement(gameState.board, row, col, num)) {
+                gameState.board[row][col] = num;
+                gameState.pencilMarks[row][col].clear();
+                document.getElementById(`cell-container-${row}-${col}`)?.classList.remove('error');
+                sounds.click(); updateScore(10);
+                if (isBoardCompleteAndCorrect()) gameComplete();
+                else { // If not complete, update identical highlights for the new number
+                    document.querySelectorAll('.sudoku-cell.highlight-identical').forEach(c => c.classList.remove('highlight-identical'));
+                    for (let r_ = 0; r_ < 9; r_++) for (let c_ = 0; c_ < 9; c_++) {
+                        if (gameState.board[r_][c_] === num) {
+                             document.getElementById(`cell-container-${r_}-${c_}`)?.classList.add('highlight-identical');
+                        }
+                    }
+                }
+            } else {
+                gameState.board[row][col] = currentBoardValue;
+                document.getElementById(`cell-container-${row}-${col}`)?.classList.add('error');
+                sounds.error(); gameState.mistakes++; updateScore(-5);
+                if (gameState.isStrictMode) {
+                    gameState.mistakesRemaining--;
+                    if (gameState.mistakesRemaining <= 0) { gameOverStrict(); return; }
+                }
+                showNotification(`❌ Invalid move! ${gameState.isStrictMode ? gameState.mistakesRemaining + ' attempts left.' : ''}`, 'error');
+                setTimeout(() => document.getElementById(`cell-container-${row}-${col}`)?.classList.remove('error'), 1000);
+            }
+            updateBoardDisplay(); updateStatsDisplay(); saveGameState();
+        }
+
+        function clearCell() {
+            if (!gameState.selectedCell || !gameState.isGameActive || gameState.isPaused) return;
+            const { row, col } = gameState.selectedCell;
+            if (gameState.originalBoard[row][col] !== 0) {
+                showNotification('⚠️ Cannot clear given numbers!', 'error'); return;
+            }
+            if (gameState.isPencilMode) gameState.pencilMarks[row][col].clear();
+            else {
+                gameState.board[row][col] = 0;
+                // Clear identical highlights if the main number is cleared
+                document.querySelectorAll('.sudoku-cell.highlight-identical').forEach(c => c.classList.remove('highlight-identical'));
+            }
+            document.getElementById(`cell-container-${row}-${col}`)?.classList.remove('error');
+            updateBoardDisplay(); updateStatsDisplay(); saveGameState(); sounds.click();
+        }
+
+        function togglePencilMode() {
+            if (gameState.isPaused) return;
+            gameState.isPencilMode = !gameState.isPencilMode;
+            updatePencilModeButton();
+            showNotification(`✏️ Pencil Mode ${gameState.isPencilMode ? 'ON' : 'OFF'}`, 'info');
+            saveGameState();
+        }
+        function updatePencilModeButton() {
+            const btn = document.getElementById('pencilModeToggleBtn');
+            if (btn) {
+                btn.innerHTML = `<i class="fas fa-pencil-alt"></i> ${gameState.isPencilMode ? 'On' : 'Off'}`;
+                if (gameState.isPencilMode) btn.classList.add('active'); else btn.classList.remove('active');
+            }
+        }
+        function addRemovePencilMark(row, col, number) {
+            if (gameState.board[row][col] !== 0) {
+                showNotification('Clear cell value to add notes.', 'info'); return;
+            }
+            const marks = gameState.pencilMarks[row][col];
+            if (marks.has(number)) marks.delete(number); else marks.add(number);
+            updateBoardDisplay(); saveGameState();
+        }
+
+        function toggleStrictMode(isChecked) {
+            if (gameState.isPaused && !isChecked) return; // Don't allow turning off strict mode if paused and it was on.
+                                                        // Allow turning ON strict mode even if paused, will apply on next game.
+            gameState.isStrictMode = isChecked;
+            gameState.mistakesRemaining = gameState.strictModeMistakeLimit;
+            updateStatsDisplay();
+            showNotification(`🛡️ Strict Mode ${gameState.isStrictMode ? 'ON' : 'OFF'}. New game will apply this.`, 'info');
+            saveGameState();
+        }
+        function updateStrictModeToggleUI() {
+            const toggle = document.getElementById('strictModeToggle');
+            if (toggle) toggle.checked = gameState.isStrictMode;
+            updateMistakesLabel();
+        }
+        function updateMistakesLabel() {
+            const label = document.getElementById('mistakesLabel');
+            if (label) label.textContent = gameState.isStrictMode ? `🛡️ Mistakes (Max ${gameState.strictModeMistakeLimit})` : '❌ Mistakes';
+        }
+        function gameOverStrict() {
+            gameState.isGameActive = false; sounds.gameOver();
+            const modalTitle = document.getElementById('gameCompleteTitle');
+            const modalMessage = document.getElementById('gameCompleteMessage');
+            const finalStatsDiv = document.getElementById('finalStats');
+            if(modalTitle) modalTitle.textContent = "😟 Game Over";
+            if(modalMessage) modalMessage.textContent = `You made too many mistakes in Strict Mode!`;
+            if(finalStatsDiv) finalStatsDiv.innerHTML = `<p><strong>🎯 Difficulty:</strong> ${difficultySettings[gameState.difficulty].name}</p><p>Better luck next time!</p>`;
+            showModal('gameCompleteModal');
+            toggleGameInteractions(false); // Disable interactions except for new game via modal
+        }
+        
+        // --- Pause / Resume ---
+        function togglePauseGame() {
+            gameState.isPaused = !gameState.isPaused;
+            updatePauseButtonUI();
+            if (gameState.isPaused) {
+                gameState.pauseStartTime = Date.now();
+                sounds.pause();
+                showNotification("❚❚ Game Paused", "info");
+                addPauseOverlay();
+                toggleGameInteractions(false);
+            } else {
+                const pauseDuration = Date.now() - gameState.pauseStartTime;
+                gameState.startTime += pauseDuration; // Adjust start time to account for pause
+                sounds.resume();
+                showNotification("▶ Game Resumed", "info");
+                removePauseOverlay();
+                toggleGameInteractions(true);
+            }
+            saveGameState();
+        }
+
+        function updatePauseButtonUI() {
+            if (domElements.pauseBtn) {
+                domElements.pauseBtn.innerHTML = gameState.isPaused ? '<i class="fas fa-play"></i> Resume' : '<i class="fas fa-pause"></i> Pause';
+            }
+        }
+        
+        function addPauseOverlay() {
+            if (document.getElementById('pauseOverlay')) return; // Already exists
+            const overlay = document.createElement('div');
+            overlay.id = 'pauseOverlay';
+            overlay.className = 'board-pause-overlay';
+            overlay.innerHTML = '<i class="fas fa-pause-circle"></i>';
+            domElements.sudokuBoard.appendChild(overlay);
+        }
+
+        function removePauseOverlay() {
+            const overlay = document.getElementById('pauseOverlay');
+            if (overlay) overlay.remove();
+        }
+
+        function toggleGameInteractions(enable) {
+            // Disable/Enable number pad
+            const numberButtons = domElements.numberPad.querySelectorAll('.number-btn');
+            numberButtons.forEach(btn => btn.disabled = !enable);
+
+            // Disable/Enable control buttons (except pause and tutorial)
+            domElements.controlButtons.forEach(btn => btn.disabled = !enable);
+            
+            // Disable/Enable option toggles
+             domElements.optionToggles.forEach(toggle => toggle.disabled = !enable);
+
+
+            // Allow pencil mode toggle only if not paused
+            const pencilBtn = document.getElementById('pencilModeToggleBtn');
+            if(pencilBtn) pencilBtn.disabled = !enable;
+            
+            // Allow strict mode toggle only if not paused
+            const strictToggle = document.getElementById('strictModeToggle');
+            if(strictToggle) strictToggle.disabled = !enable;
+
+
+            // Cells are not directly disabled, but selectCell checks gameState.isPaused
+        }
+
+
+        function requestHint() {
+            if (!gameState.isGameActive || gameState.isPaused || gameState.hintsDisplay <= 0) {
+                showNotification(gameState.hintsDisplay <= 0 ? '💡 No hints remaining!' : (gameState.isPaused ? 'Game is Paused!' : 'Game not active.'), 'error'); return;
+            }
+            const nakedSingleHint = findNakedSingle();
+            if (nakedSingleHint) {
+                const { row, col, num } = nakedSingleHint;
+                gameState.board[row][col] = num; gameState.pencilMarks[row][col].clear();
+                gameState.hintsUsed++; gameState.hintsDisplay--;
+                updateBoardDisplay(); updateStatsDisplay(); saveGameState();
+                const cellElem = document.getElementById(`cell-container-${row}-${col}`);
+                if (cellElem) { cellElem.classList.add('highlight-hint'); setTimeout(() => cellElem.classList.remove('highlight-hint'), 2500); }
+                showNotification(`💡 Hint: Cell R${row+1},C${col+1} is a Naked Single for ${num}.`, 'info');
+                sounds.hint(); if (isBoardCompleteAndCorrect()) gameComplete(); return;
+            }
+            const emptyCells = [];
+            for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (gameState.board[r][c] === 0) emptyCells.push({ r, c });
+            if (emptyCells.length === 0) { showNotification('🎉 Board is full!', 'info'); return; }
+            const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            const { r, c } = randomCell;
+            gameState.board[r][c] = gameState.solution[r][c]; gameState.pencilMarks[r][c].clear();
+            gameState.hintsUsed++; gameState.hintsDisplay--;
+            updateBoardDisplay(); updateStatsDisplay(); saveGameState();
+            const cellElem = document.getElementById(`cell-container-${r}-${c}`);
+            if (cellElem) { cellElem.classList.add('highlight-hint'); setTimeout(() => cellElem.classList.remove('highlight-hint'), 2000); }
+            showNotification('💡 Simple Hint used!', 'info');
+            sounds.hint(); if (isBoardCompleteAndCorrect()) gameComplete();
+        }
+        function findNakedSingle() {
+            for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+                if (gameState.board[r][c] === 0) {
+                    let possibleNumbers = new Set([1,2,3,4,5,6,7,8,9]);
+                    for (let i = 0; i < 9; i++) {
+                        if (gameState.board[r][i] !== 0) possibleNumbers.delete(gameState.board[r][i]);
+                        if (gameState.board[i][c] !== 0) possibleNumbers.delete(gameState.board[i][c]);
+                    }
+                    const boxR = Math.floor(r / 3) * 3, boxC = Math.floor(c / 3) * 3;
+                    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+                        if (gameState.board[boxR+i][boxC+j] !== 0) possibleNumbers.delete(gameState.board[boxR+i][boxC+j]);
+                    }
+                    if (possibleNumbers.size === 1) return { row: r, col: c, num: possibleNumbers.values().next().value };
+                }
+            }
+            return null;
+        }
+
+        function isValidPlacement(currentBoard, row, col, num) {
+            for (let i = 0; i < 9; i++) {
+                if ((currentBoard[row][i] === num && i !== col) || (currentBoard[i][col] === num && i !== row)) return false;
+            }
+            const boxR = Math.floor(row / 3) * 3, boxC = Math.floor(col / 3) * 3;
+            for (let r_ = 0; r_ < 3; r_++) for (let c_ = 0; c_ < 3; c_++) {
+                if (currentBoard[boxR + r_][boxC + c_] === num && (boxR + r_ !== row || boxC + c_ !== col)) return false;
+            }
+            return true;
+        }
+        function validateBoard() {
+            if (!gameState.isGameActive || gameState.isPaused) return;
+            let errors = 0, allFilled = true;
+            for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+                const cellContainer = document.getElementById(`cell-container-${r}-${c}`);
+                cellContainer?.classList.remove('error');
+                const val = gameState.board[r][c];
+                if (val === 0) { allFilled = false; continue; }
+                const tempVal = gameState.board[r][c]; gameState.board[r][c] = 0;
+                if (!isValidPlacement(gameState.board, r, c, tempVal)) {
+                    errors++; cellContainer?.classList.add('error');
+                }
+                gameState.board[r][c] = tempVal;
+            }
+            if (errors > 0) showNotification(`❌ Found ${errors} error(s)!`, 'error');
+            else if (!allFilled) showNotification('🤔 No errors so far, but not complete.', 'info');
+            else { showNotification('✅ Excellent! Board is correct and complete!', 'success'); if(isBoardCompleteAndCorrect()) gameComplete(); }
+            sounds[errors > 0 ? 'error' : 'success']();
+        }
+        function isBoardCompleteAndCorrect() {
+            for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+                if (gameState.board[r][c] === 0 || gameState.board[r][c] !== gameState.solution[r][c]) return false;
+            }
+            return true;
+        }
+        function gameComplete() {
+            if (!gameState.isGameActive) return; gameState.isGameActive = false;
+            const finalTime = Math.floor((Date.now() - gameState.startTime) / 1000);
+            const diffBonus = difficultySettings[gameState.difficulty].timeBonus;
+            const scoreCalc = Math.max(0, 500 + diffBonus - (finalTime / 2) - (gameState.mistakes * 10) - (gameState.hintsUsed * 20));
+            gameState.score = Math.round(scoreCalc);
+            updateStatsDisplay(); createCelebration(); sounds.complete();
+            const modalTitle = document.getElementById('gameCompleteTitle');
+            const modalMessage = document.getElementById('gameCompleteMessage');
+            const finalStatsDiv = document.getElementById('finalStats');
+            if(modalTitle) modalTitle.textContent = "🎉 Congratulations!";
+            if(modalMessage) modalMessage.textContent = "You've completed the puzzle masterfully!";
+            if(finalStatsDiv) finalStatsDiv.innerHTML = `<div style="margin: 20px 0; line-height: 1.6;"><p><strong>🏆 Final Score:</strong> ${gameState.score}</p><p><strong>⏱️ Time:</strong> ${formatTime(finalTime)}</p><p><strong>${gameState.isStrictMode ? '🛡️' : '❌'} Mistakes:</strong> ${gameState.mistakes}</p><p><strong>💡 Hints Used:</strong> ${gameState.hintsUsed}</p><p><strong>🎯 Difficulty:</strong> ${difficultySettings[gameState.difficulty].name}</p></div>`;
+            showModal('gameCompleteModal');
+            toggleGameInteractions(false); // Disable interactions after game complete
+        }
+
+        function updateStatsDisplay() {
+            document.getElementById('timeDisplay').textContent = formatTime(gameState.gameTime);
+            document.getElementById('mistakesDisplay').textContent = gameState.isStrictMode ? `${gameState.mistakes} (${gameState.mistakesRemaining} left)` : gameState.mistakes;
+            document.getElementById('hintsDisplay').textContent = gameState.hintsDisplay;
+            document.getElementById('scoreDisplay').textContent = gameState.score;
+            updateMistakesLabel();
+        }
+        function updateProgress() {
+            const filledCount = gameState.board.flat().filter(v => v !== 0).length;
+            const progress = (filledCount / 81) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+        function updateScore(points) { gameState.score = Math.max(0, gameState.score + points); updateStatsDisplay(); }
+        function formatTime(s) { const m = Math.floor(s/60); const sec = s%60; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
+        let gameTimerInterval = null;
+        function startTimer() {
+            if (gameTimerInterval) clearInterval(gameTimerInterval);
+            gameTimerInterval = setInterval(() => {
+                if (gameState.isGameActive && !gameState.isPaused && gameState.startTime) { // Check isPaused
+                    gameState.gameTime = Math.floor((Date.now() - gameState.startTime) / 1000);
+                    updateStatsDisplay();
+                }
+            }, 1000);
+        }
+
+        function showNotification(message, type) {
+            const existing = document.querySelector('.notification'); if (existing) existing.remove();
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            let icon = 'fa-info-circle';
+            if (type === 'success') icon = 'fa-check-circle'; else if (type === 'error') icon = 'fa-exclamation-circle';
+            notification.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+            document.body.appendChild(notification);
+            setTimeout(() => { if (notification.parentNode) notification.remove(); }, 3000);
+        }
+        function showModal(id) { const m=document.getElementById(id); if(m) m.style.display = 'block'; }
+        function closeModal(id) { const m=document.getElementById(id); if(m) m.style.display = 'none'; }
+        let confirmCallback = null;
+        function showConfirmModal(title, msg, cb) {
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = msg;
+            confirmCallback = cb; showModal('confirmModal');
+        }
+        function confirmAction() { if (typeof confirmCallback === 'function') confirmCallback(); confirmCallback=null; closeModal('confirmModal');}
+        
+        function updateDifficultyButtonsUI(level) {
+            document.querySelectorAll('.difficulty-btn').forEach(b => {
+                b.classList.remove('active'); if (b.dataset.difficulty === level) b.classList.add('active');
+            });
+        }
+        function setDifficulty(level) {
+            if (gameState.isPaused) return;
+            if (difficultySettings[level]) {
+                gameState.difficulty = level; updateDifficultyButtonsUI(level); saveGameState();
+                showNotification(`🎯 Difficulty: ${difficultySettings[level].name}. New game will use this.`, 'info');
+            }
+        }
+        function updateSoundToggleUI(enabled) {
+            const i = document.getElementById('soundIcon'); if(i) i.className = enabled ? 'fas fa-volume-up':'fas fa-volume-mute';
+        }
+        function toggleSound() { // Sound can be toggled even if paused
+            gameState.soundEnabled = !gameState.soundEnabled; updateSoundToggleUI(gameState.soundEnabled);
+            showNotification(gameState.soundEnabled ? '🔊 Sound ON':'🔇 Sound OFF', 'info'); saveGameState();
+        }
+        
+        function showTutorial() { // Tutorial can be shown even if paused
+            gameState.currentTutorialStep = 1;
+            updateTutorialView();
+            showModal('tutorialModal');
+        }
+        function nextTutorialStep() {
+            if (gameState.currentTutorialStep < gameState.totalTutorialSteps) gameState.currentTutorialStep++;
+            updateTutorialView();
+        }
+        function previousTutorialStep() {
+            if (gameState.currentTutorialStep > 1) gameState.currentTutorialStep--;
+            updateTutorialView();
+        }
+        function closeTutorial() { closeModal('tutorialModal'); }
+        function updateTutorialView() {
+            const prevBtn = document.getElementById('tutorialPrevBtn');
+            const nextBtn = document.getElementById('tutorialNextBtn');
+            const closeBtn = document.getElementById('tutorialCloseBtn');
+            for (let i = 1; i <= gameState.totalTutorialSteps; i++) {
+                const stepEl = document.getElementById(`tutStep${i}`);
+                if (stepEl) stepEl.style.display = (i === gameState.currentTutorialStep) ? 'block' : 'none';
+            }
+            if (prevBtn) prevBtn.style.display = (gameState.currentTutorialStep > 1) ? 'inline-flex' : 'none';
+            if (nextBtn) nextBtn.style.display = (gameState.currentTutorialStep < gameState.totalTutorialSteps) ? 'inline-flex' : 'none';
+            if (closeBtn) closeBtn.style.display = (gameState.currentTutorialStep === gameState.totalTutorialSteps) ? 'inline-flex' : 'none';
+            const modalTitleEl = document.getElementById('tutorialModalTitle');
+            if (modalTitleEl) modalTitleEl.textContent = `Sudoku Platinum Tutorial (Step ${gameState.currentTutorialStep} of ${gameState.totalTutorialSteps})`;
+        }
+
+        window.addEventListener('click', e => { document.querySelectorAll('.modal').forEach(m => { if (e.target === m && m.id !== 'tutorialModal') closeModal(m.id); }); });
+        document.addEventListener('keydown', e => {
+            if (document.getElementById('tutorialModal').style.display === 'block') {
+                if (e.key === 'ArrowRight') nextTutorialStep();
+                else if (e.key === 'ArrowLeft') previousTutorialStep();
+                else if (e.key === 'Escape') closeTutorial();
+                return; 
+            }
+            if (document.querySelector('.modal[style*="display: block"]')) return; // Other modals block shortcuts
+
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            const key = e.key.toLowerCase(); if (e.ctrlKey || e.metaKey) return;
+
+            if (key === 'n') newGame(); 
+            else if (key === 'h') requestHint(); 
+            else if (key === 'c') validateBoard();
+            else if (key === 'r') resetGame(); 
+            else if (key === 'p') togglePencilMode();
+            else if (key === ' ') { // Spacebar for pause/resume
+                 e.preventDefault(); // Prevent page scroll
+                 togglePauseGame();
+            }
+        });
+        const boardElem = document.getElementById('sudokuBoard');
+        if(boardElem) boardElem.addEventListener('contextmenu', e => e.preventDefault());
+
+        function createCelebration() {
+            const cont = document.getElementById('celebration'); if(!cont) return; cont.innerHTML = '';
+            const colors = ['#ff6b6b','#4ecdc4','#45b7d1','#96ceb4','#ffeaa7','#dda0dd','#fbc531'];
+            for (let i=0; i<70; i++) {
+                const c = document.createElement('div'); c.className = 'confetti';
+                c.style.left = Math.random()*100+'%'; c.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
+                c.style.animationDuration = (Math.random()*2+3)+'s'; c.style.animationDelay = Math.random()*1+'s';
+                c.style.opacity = Math.random()*0.6+0.4; const size = (Math.random()*6+6)+'px';
+                c.style.width = size; c.style.height = size;
+                c.style.transform = `rotate(${Math.random()*360}deg) scale(${Math.random()*0.5+0.5})`;
+                cont.appendChild(c);
+            }
+            setTimeout(() => { cont.innerHTML = ''; }, 5000);
+        }
+    </script>
+</body>
+</html>
